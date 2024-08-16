@@ -1,0 +1,30 @@
+{
+    "name": "issue-tracker-ui",
+    "version": "1.0.0",
+    "description": "Issue Tracker Application (Pro MERN Stack) UI",
+    "main": "index.js",
+    "scripts": {
+        "start": "nodemon -w uiserver.js -w .env uiserver.js",
+        "compile": "babel src --out-dir public",
+        "watch": "babel src --out-dir public --watch --verbose"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/AbdulMoiz961/Issue_Tracker.git"
+    },
+    "author": "shabdulmoiz96@gmail.com",
+    "license": "ISC",
+    "homepage": "https://github.com/AbdulMoiz961/Issue_Tracker",
+    "dependencies": {
+        "dotenv": "^6.2.0",
+        "express": "^4.16.4",
+        "http-proxy-middleware": "^0.21.0",
+        "nodemon": "^1.18.9"
+    },
+    "devDependencies": {
+        "@babel/cli": "^7.2.3",
+        "@babel/core": "^7.2.2",
+        "@babel/preset-env": "^7.2.3",
+        "@babel/preset-react": "^7.0.0"
+    }
+}

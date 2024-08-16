@@ -1,4 +1,4 @@
 node_modules
 package-lock.json
-public/App.js
-scripts/trymongo.js
+ui/public/App.js
+api/scripts/trymongo.js
