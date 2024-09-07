@@ -2,15 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 import graphQLFetch from './graphQLFetch.js';
+import NumInput from './NumInput.jsx';
+import DateInput from './DateInput.jsx';
+import TextInput from './TextInput.jsx';
 
 export default class IssueEdit extends React.Component {
   constructor() {
     super();
     this.state = {
       issue: {},
+      invalidFields: {},
     };
     this.onChange = this.onChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.onValidityChange = this.onValidityChange.bind(this);
   }
 
   componentDidMount() {
@@ -25,17 +30,47 @@ export default class IssueEdit extends React.Component {
     }
   }
 
-  onChange(event) {
-    const { name, value } = event.target;
+  onChange(event, naturalValue) {
+    const { name, value: textValue } = event.target;
+    const value = naturalValue === undefined ? textValue : naturalValue;
     this.setState(prevState => ({
       issue: { ...prevState.issue, [name]: value },
     }));
   }
 
-  handleSubmit(e) {
+  onValidityChange(event, valid) {
+    const { name } = event.target;
+    this.setState((prevState) => {
+      const invalidFields = { ...prevState.invalidFields, [name]: !valid };
+      if (valid) delete invalidFields[name];
+      return { invalidFields };
+    });
+  }
+
+  async handleSubmit(e) {
     e.preventDefault();
-    const { issue } = this.state;
-    console.log(issue); // eslint-disable-line no-console
+    const { issue, invalidFields } = this.state;
+    if (Object.keys(invalidFields).length !== 0) return;
+
+    const query = `mutation issueUpdate(
+      $id: Int!
+      $changes: IssueUpdateInputs!
+    ) {
+      issueUpdate(
+        id: $id
+        changes: $changes
+      ) {
+        id title status owner
+        effort created due description
+      }
+    }`;
+
+    const { id, created, ...changes } = issue;
+    const data = await graphQLFetch(query, { changes, id });
+    if (data) {
+      this.setState({ issue: data.issueUpdate });
+      alert('Updated issue succesfully'); // eslint-disable-line no-alert
+    }
   }
 
   async loadData() {
@@ -48,16 +83,7 @@ export default class IssueEdit extends React.Component {
 
     const { match: { params: { id } } } = this.props;
     const data = await graphQLFetch(query, { id });
-    if (data) {
-      const { issue } = data;
-      issue.due = issue.due ? issue.due.toDateString() : '';
-      issue.effort = issue.effort != null ? issue.effort.toString() : '';
-      issue.owner = issue.owner != null ? issue.owner : '';
-      issue.description = issue.description != null ? issue.description : '';
-      this.setState({ issue });
-    } else {
-      this.setState({ issue: {} });
-    }
+    this.setState({ issue: data ? data.issue : {}, invalidFields: {} });
   }
 
   render() {
@@ -68,6 +94,16 @@ export default class IssueEdit extends React.Component {
         return <h3>{`Issue with ID ${propsId} not found.`}</h3>;
       }
       return null;
+    }
+
+    const { invalidFields } = this.state;
+    let validationMessage;
+    if (Object.keys(invalidFields).length !== 0) {
+      validationMessage = (
+        <div className="error">
+          Please correct invalid fields before submitting.
+        </div>
+      );
     }
 
     const { issue: { title, status } } = this.state;
@@ -97,53 +133,60 @@ export default class IssueEdit extends React.Component {
             <tr>
               <td>Owner:</td>
               <td>
-                <input
+                <TextInput
                   name="owner"
                   value={owner}
                   onChange={this.onChange}
+                  key={id}
                 />
               </td>
             </tr>
             <tr>
               <td>Effort:</td>
               <td>
-                <input
+                <NumInput
                   name="effort"
                   value={effort}
                   onChange={this.onChange}
+                  key={id}
                 />
               </td>
             </tr>
             <tr>
               <td>Due:</td>
               <td>
-                <input
+                <DateInput
                   name="due"
                   value={due}
                   onChange={this.onChange}
+                  onValidityChange={this.onValidityChange}
+                  key={id}
                 />
               </td>
             </tr>
             <tr>
               <td>Title:</td>
               <td>
-                <input
+                <TextInput
                   size={50}
                   name="title"
                   value={title}
                   onChange={this.onChange}
+                  key={id}
                 />
               </td>
             </tr>
             <tr>
               <td>Description:</td>
               <td>
-                <textarea
+                <TextInput
+                  tag="textarea"
                   rows={8}
                   cols={50}
                   name="description"
                   value={description}
                   onChange={this.onChange}
+                  key={id}
                 />
               </td>
             </tr>
@@ -153,6 +196,7 @@ export default class IssueEdit extends React.Component {
             </tr>
           </tbody>
         </table>
+        {validationMessage}
         <Link to={`/edit/${id - 1}`}>Prev</Link>
         {' | '}
         <Link to={`/edit/${id + 1}`}>Next</Link>
